@@ -4,11 +4,12 @@ import pandas as pd
 from sklearn.metrics import roc_auc_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
-from lightgbm import LGBMClassifier#效果不行
-from sklearn.ensemble import GradientBoostingClassifier
+from lightgbm import LGBMClassifier
+from xgboost import XGBClassifier
+from sklearn.ensemble import GradientBoostingClassifier, HistGradientBoostingClassifier, VotingClassifier
 
 # train
-def train_test(train_dataset, test_dataset):
+def train_test(train_dataset, test_dataset, model):
 # split train_dataset and verify_dataset from train_dataset
     k = 10
     kfold = StratifiedKFold(n_splits = 10, shuffle = False)
@@ -22,7 +23,7 @@ def train_test(train_dataset, test_dataset):
         label_train = labels.iloc[train_index]
         feature_varify = features.iloc[varify_index,:]
         label_varify = labels.iloc[varify_index]
-        model = GradientBoostingClassifier()
+        model = model
         model.fit(feature_train, label_train)
         label_pred = model.predict_proba(feature_varify)[:, 1]
         labels_pred[varify_index] = label_pred
@@ -81,5 +82,14 @@ for i in range(len(feature_call)):
         test_data[feature_call[i] + "-" + feature_call[j]] = test_data[feature_call[i]] - test_data[feature_call[j]]
         test_data[feature_call[i] + "*" + feature_call[j]] = test_data[feature_call[i]] * test_data[feature_call[j]]
         test_data[feature_call[i] + "/" + feature_call[j]] = test_data[feature_call[i]] / (test_data[feature_call[j]] + 1)
+
+#select models
+gbc = GradientBoostingClassifier()
+hgbc = HistGradientBoostingClassifier()
+xgbc = XGBClassifier()
+lgbm = LGBMClassifier()
+
+model_list=[("gbc", gbc), ("hgbc", hgbc), ("xgbc", xgbc), ("lgbm", lgbm)]
+model = VotingClassifier(estimators = model_list, voting = "soft")
 # train and test
-train_test(train_dataset = train_data_label, test_dataset = test_data)
+train_test(train_dataset = train_data_label, test_dataset = test_data, model = model)
